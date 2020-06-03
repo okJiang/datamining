@@ -36,6 +36,8 @@ n_classes = np.arange(np.unique(y).size)
 # 		        max_iter=200)
 # clf = LinearSVC(penalty='l2', random_state=0, tol=1e-4)
 # clf = Pipeline([('nca', NeighborhoodComponentsAnalysis(random_state=42)), ('knn', KNeighborsClassifier(n_neighbors=3))])
+nca = NeighborhoodComponentsAnalysis(random_state=42)
+knn = KNeighborsClassifier(n_neighbors=3)
 
 
 print('cart:' + path)
@@ -45,14 +47,14 @@ skf_accuracy1 = []
 skf_accuracy2 = []
 
 for train, test in skf.split(X, y):
-    clf.fit(X[train], y[train])
-    skf_accuracy1.append(clf.score(X[test], y[test]))
-    aa = clf.predict(X[test])
+    nca.fit(X[train], y[train])
+    knn.fit(nca.transform(X[train]), y[train])
+    skf_accuracy1.append(knn.score(nca.transform(X[train]), y[train]))
     if n_classes.size < 3:
-        skf_accuracy2.append(roc_auc_score(y[test], clf.predict(X[test]), average='micro'))
+        skf_accuracy2.append(roc_auc_score(y[test], knn.predict(nca.transform(X[train])), average='micro'))
     else:
         ytest_one_hot = label_binarize(y[test], n_classes)
-        skf_accuracy2.append(roc_auc_score(ytest_one_hot, clf.predict_proba(X[test]), average='micro'))
+        skf_accuracy2.append(roc_auc_score(ytest_one_hot, knn.predict(nca.transform(X[train])), average='micro'))
         # skf_accuracy2.append(roc_auc_score(ytest_one_hot, clf.decision_function(X[test]), average='micro'))
 accuracy1 = np.mean(skf_accuracy1)
 accuracy2 = np.mean(skf_accuracy2)
